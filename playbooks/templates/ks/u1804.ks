@@ -1,0 +1,133 @@
+install
+text
+keyboard us
+lang en_US.UTF-8
+skipx
+network --device eth0 --bootproto=dhcp
+network --device eth1 --bootproto=dhcp
+rootpw --iscrypted $1$LeTqgtiG$a8Wx5LEsNs6Xo1.NSWVdB.
+firewall --disabled
+authconfig --enableshadow --enablemd5
+selinux --enforcing
+timezone --utc America/New_York
+bootloader --location=mbr --append="console=tty0 console=ttyS0,115200n8"
+part biosboot --fstype=biosboot --size=1
+clearpart --all --drives=vda
+part / --fstype="xfs" --size=3000 --grow
+reboot
+
+repo --name="f29" --baseurl=https://mirror.aarnet.edu.au/pub/fedora/linux/releases/29/Server/x86_64/os/
+
+%packages
+@core
+kernel
+nfs-utils
+
+# pull firmware packages out
+-aic94xx-firmware
+-alsa-firmware
+-alsa-lib
+-alsa-tools-firmware
+-ivtv-firmware
+-iwl1000-firmware
+-iwl100-firmware
+-iwl105-firmware
+-iwl135-firmware
+-iwl2000-firmware
+-iwl2030-firmware
+-iwl3160-firmware
+-iwl3945-firmware
+-iwl4965-firmware
+-iwl5000-firmware
+-iwl5150-firmware
+-iwl6000-firmware
+-iwl6000g2a-firmware
+-iwl6000g2b-firmware
+-iwl6050-firmware
+-iwl7260-firmware
+-libertas-sd8686-firmware
+-libertas-sd8787-firmware
+-libertas-usb8388-firmware
+
+# Needed initially, but removed below.
+firewalld
+
+# cherry-pick a few things from @base
+tar
+tcpdump
+rsync
+
+# Misc bits
+vim-enhanced
+tmux
+wget
+
+# Development bits
+git
+
+%end
+
+#
+# Add custom post scripts after the base post.
+#
+%post --erroronfail
+
+# Remove firewalld; it is required to be present for install/image building.
+echo "Removing firewalld."
+yum -C -y remove firewalld --setopt="clean_requirements_on_remove=1"
+
+#dnf install rsync-daemon
+
+echo -n "Network fixes"
+# initscripts don't like this file to be missing.
+cat > /etc/sysconfig/network << EOF
+NETWORKING=yes
+NOZEROCONF=yes
+EOF
+
+# Disable subscription-manager yum plugins
+#sed -i 's|^enabled=1|enabled=0|' /etc/yum/pluginconf.d/product-id.conf
+#sed -i 's|^enabled=1|enabled=0|' /etc/yum/pluginconf.d/subscription-manager.conf
+
+echo "Cleaning old yum repodata."
+yum clean all
+
+# clean up installation logs"
+rm -rf /var/log/yum.log
+rm -rf /var/lib/yum/*
+rm -rf /root/install.log
+rm -rf /root/install.log.syslog
+rm -rf /root/anaconda-ks.cfg
+rm -rf /var/log/anaconda*
+
+echo "Fixing SELinux contexts."
+touch /var/log/cron
+touch /var/log/boot.log
+mkdir -p /var/cache/yum
+/usr/sbin/fixfiles -R -a restore
+
+# remove random-seed so it's not the same every time
+rm -f /var/lib/systemd/random-seed
+
+cat <<"EO_REPO" > /etc/yum.repos.d/base.repo
+[f29]
+name=f29
+baseurl=https://mirror.aarnet.edu.au/pub/fedora/linux/releases/29/Server/x86_64/os/
+enabled=1
+gpgcheck=0
+EO_REPO
+
+cat <<EO_HOSTS > /etc/hosts
+127.0.0.1   u1804.example.com u1804 localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         u1804.example.com u1804 localhost localhost.localdomain localhost6 localhost6.localdomain6
+EO_HOSTS
+
+hostnamectl set-hostname u1804
+
+# These two are needed for devstack
+dnf install -y rsync-daemon python2-libselinux
+
+mkdir -p /root/.ssh
+chmod 0700 /root/.ssh
+
+%end

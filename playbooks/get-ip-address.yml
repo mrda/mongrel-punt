@@ -1,0 +1,29 @@
+---
+
+- name: Get IP address of running VM
+  hosts: hypervisors
+  handlers:
+  tasks:
+
+  - name: grab a routed IP address for the vm
+    become: yes
+    shell: |
+        virsh domifaddr "{{ name }}" |
+        tail -n +3 | awk '{print $4}' |
+        cut -d'/' -f1 |
+        while read ipa ; do 
+            ping -c1 $ipa >& /dev/null; 
+            [[ $? -eq 0 ]] && echo "$ipa" && break;
+        done
+    register: ip_addr
+    delegate_to: localhost
+    until: ip_addr.rc == 0
+    delay: 10
+    retries: 12
+
+  - name: ensure we found an IP address for this vm
+    fail: msg="Could not find IP Address for '{{ name }}'"
+    when: ip_addr.stdout is not defined or ip_addr.stdout == ""
+
+  - debug:
+      msg: "IP Address for {{ name }} is {{ ip_addr.stdout }}"

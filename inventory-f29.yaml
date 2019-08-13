@@ -1,0 +1,24 @@
+all:
+    hosts:
+        localhost:
+    vars:
+        libvirt_path: /home/libvirt
+        os: fedora29
+        name: f29
+        url: https://mirror.aarnet.edu.au/pub/fedora/linux/releases/29/Server/x86_64/os
+        disk_size: 60G
+        memory_size: 14888
+        ks_path: "{{ libvirt_path }}/ks"
+        image_path: "{{ libvirt_path }}/images"
+        disk_path: "{{ image_path }}/{{ name }}.raw"
+        extra_args: "ks=file:/f29.ks console=tty0 console=ttyS0,115200n8 ip=::::f29.example.com:enp2s0:dhcp::: nameserver=8.8.8.8"
+        devstack_password: p4ssw0rd
+        extra_openstack_pkgs:
+            - metalsmith
+            - os-traits
+    children:
+        hypervisors:
+            hosts:
+                localhost:
+        vms:
+

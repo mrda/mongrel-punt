@@ -1,0 +1,139 @@
+
+---
+- name: Setup the very basics of the libvirt VMs
+  hosts: hypervisors
+  handlers:
+  tasks:
+
+    - name: Ensure libvirt home dir exists
+      become: yes
+      file:
+        path: "/home/libvirt"
+        state: directory
+        owner: root
+        group: root
+        mode: "u=rwx,g=rwx,o=rx"
+        seuser: "system_u"
+        setype: "virt_var_lib_t"
+
+    - name: Allow creation in libvirt directory
+      become: yes
+      sefcontext:
+        target: "/home/libvirt(/.*)?"
+        seuser: "system_u"
+        setype: "virt_var_lib_t"
+        state: present
+
+    - name: Ensure ks directory exists
+      become: yes
+      file:
+        name: "{{ ks_path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: u=rwx,g=rwx,o=rx
+        seuser: "system_u"
+        setype: "virt_var_lib_t"
+
+    - name: Create libvirt image_path exists
+      become: yes
+      file:
+        path: "{{ image_path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "u=rwx,g=rwx,o=rwx"
+        seuser: "system_u"
+        setype: "virt_var_lib_t"
+
+    - name: Write ks files
+      become: yes
+      template:
+        src: "ks/{{ name }}.j2"
+        dest: "{{ ks_path }}/{{ name }}.ks"
+        owner: root
+        group: root
+        mode: u=rw,g=rw,o=r
+
+    - name: Allow libvirt to manage files in image_path
+      become: yes
+      sefcontext:
+        target: "{{ image_path }}(/.*)?"
+        seuser: "system_u"
+        setype: "virt_var_lib_t"
+        state: present
+
+    - name: Destroy the old VMs with the same name
+      become: yes
+      shell: virsh destroy "{{ name }}"
+      ignore_errors: yes
+
+    - name: Undefine the old VMs with the same name
+      become: yes
+      shell: virsh undefine "{{ name }}"
+      ignore_errors: yes
+
+    - name: Create a new sparse disk
+      become: yes
+      shell: qemu-img create -f raw "{{ image_path }}/{{ name }}.raw" "{{ disk_size }}"
+
+    - name: Build and install the VM
+      become: yes
+      shell: >
+        virt-install --name "{{ name }}"
+        --memory "{{ memory_size }}"
+        --machine q35
+        --vcpus sockets=1,cores=4,threads=1
+        --disk "{{ disk_path }}",format=raw,bus=virtio,cache=none
+        --os-variant "{{ os }}"
+        --network network=default --network network=default
+        --events on_reboot=destroy
+        --location "{{ url }}"
+        --initrd-inject "{{ ks_path }}/{{ name }}".ks
+        --extra-args="{{ extra_args }}"
+        --noautoconsole
+
+    - name: Wait for installation to complete
+      become: yes
+      shell: virsh list --all | grep "{{ name }}" | awk '{print $3}'
+      register: state
+      until: state.stdout == "shut"
+      delay: 30
+      retries: 40
+
+    - name: start vm
+      become: yes
+      shell: virsh start "{{ name }}"
+      ignore_errors: yes
+
+    - name: Wait for vm to start
+      become: yes
+      shell: virsh list --all | grep "{{ name }}" | awk '{print $3}'
+      register: state
+      until: state.stdout == "running"
+      delay: 10
+      retries: 20
+
+    - name: grab a routed IP address for the vm
+      become: yes
+      shell: |
+        virsh domifaddr "{{ name }}" |
+        tail -n +3 |
+        awk '{print $4}' |
+        cut -d'/' -f1 |
+        while read ipa ; do
+            ping -c1 $ipa >& /dev/null;
+            [[ $? -eq 0 ]] && echo "$ipa" && break;
+        done
+      register: ip_addr
+      delegate_to: localhost
+      until: ip_addr.rc == 0
+      delay: 10
+      retries: 12
+
+    - name: ensure we found an IP address for this vm
+      fail: msg="Could not find IP Address for '{{ name }}'"
+      when: ip_addr.stdout is not defined or ip_addr.stdout == ""
+
+    - debug:
+        msg: "IP Address for {{ name }} is {{ ip_addr.stdout }}"

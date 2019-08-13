@@ -1,0 +1,4 @@
+---
+#- import_playbook: build-vm.yml  # This is for f29 only right now
+- import_playbook: start-devstack.yml
+- import_playbook: introspect-nodes.yml

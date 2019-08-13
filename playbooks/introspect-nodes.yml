@@ -1,0 +1,163 @@
+---
+- name: Find the IP address of the vm we want to act on
+  hosts: localhost
+  tasks:
+
+  - name: grab a routed IP address for the vm
+    become: yes
+    shell: virsh domifaddr "{{ name }}" | tail -n +3 | awk '{print $4}' | cut -d'/' -f1 | while read ipa ; do ping -c1 $ipa >& /dev/null; [[ $? -eq 0 ]] && echo "$ipa" && break; done
+    register: ip_addr
+    delegate_to: localhost
+    until: ip_addr.rc == 0
+    delay: 10
+    retries: 12
+
+  - name: ensure we found an IP address for this vm
+    fail: msg="Could not find IP Address for '{{ name }}'"
+    when: ip_addr.stdout is not defined or ip_addr.stdout == ""
+
+  - name: Add VM ip address to new groups vms
+    add_host:
+      name: "{{ ip_addr.stdout }}"
+      groups: vms
+
+- name: Find the baremetal nodes we want to operate on
+  hosts: vms
+  tasks:
+
+  - name: find the baremetal nodes for each vm
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal node list -f value | awk '{ print $2 }'
+    args:
+      executable: "/bin/bash"
+    register: node_list
+
+  - name: remove traits from all nodes
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal node remove trait --all "{{ item }}"
+    args:
+      executable: "/bin/bash"
+    with_items:
+        - "{{ node_list.stdout_lines }}"
+
+  - name: Drop all instrospection rules
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal introspection rule purge
+    args:
+      executable: "/bin/bash"
+
+  - name: Import introspection rules
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal introspection rule import /opt/stack/introspection/rules.json
+    args:
+      executable: "/bin/bash"
+    register: introspection_rule_import
+
+  - debug:
+      msg: "Introspection rule import: {{ introspection_rule_import.stdout_lines }}"
+
+  - name: Show traits for each node before introspection
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal node trait list -f value "{{ item }}"
+    args:
+      executable: "/bin/bash"
+    register: pre_introspection
+    with_items:
+        - "{{ node_list.stdout_lines }}"
+
+  - debug:
+      msg: Node {{ item }} has traits {{ pre_introspection.results[0].stdout_lines }}
+    with_items:
+      - "{{ node_list.stdout_lines }}"
+
+  - name: put each node into manage state
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal node manage "{{ item }}"
+    args:
+      executable: "/bin/bash"
+    register: manage_result
+    failed_when: manage_result.rc != 0
+    with_items:
+        - "{{ node_list.stdout_lines }}"
+
+  - name: start node introspection
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal introspection start "{{ item }}"
+    args:
+      executable: "/bin/bash"
+    register: intro_start_result
+    failed_when: intro_start_result.rc != 0
+    with_items:
+        - "{{ node_list.stdout_lines }}"
+
+  - name: wait for nodes to finish introspection
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal introspection status "{{ item }}" -f value -c 'finished'
+    args:
+      executable: "/bin/bash"
+    register: status_result
+    until: status_result.stdout == "True"
+    delay: 30
+    retries: 16
+    with_items:
+        - "{{ node_list.stdout_lines }}"
+
+  - name: Return each node to the available pool
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal node provide "{{ item }}"
+    args:
+      executable: "/bin/bash"
+    register: provide_result
+    failed_when: provide_result.rc != 0
+    with_items:
+        - "{{ node_list.stdout_lines }}"
+
+  - name: Wait for nodes to turn off
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal node show "{{ item }}" -f value -c 'power_state'
+    args:
+      executable: "/bin/bash"
+    register: power_result
+    until: power_result.stdout == "power off"
+    delay: 30
+    retries: 16
+    with_items:
+        - "{{ node_list.stdout_lines }}"
+
+  - name: Wait for nodes to return to "available"
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal node show "{{ item }}" -f value -c 'provision_state'
+    args:
+      executable: "/bin/bash"
+    register: available_result
+    until: available_result.stdout == "available"
+    delay: 30
+    retries: 16
+    with_items:
+        - "{{ node_list.stdout_lines }}"
+
+  - name: Show traits for each node after introspection
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal node trait list -f value "{{ item }}"
+    args:
+      executable: "/bin/bash"
+    register: post_introspection
+    with_items:
+        - "{{ node_list.stdout_lines }}"
+
+  - debug:
+      msg: Node {{ item }} has traits {{ post_introspection.results[0].stdout_lines }}
+    with_items:
+      - "{{ node_list.stdout_lines }}"

@@ -1,0 +1,44 @@
+[
+    {
+        "description": "Find x86-64",
+        "conditions": [
+            {"op": "eq",
+             "field": "data://inventory.cpu.architecture",
+             "value": "x86_64"
+            }
+        ],
+        "actions": [
+            {"action": "add-trait",
+             "name": "HW_CPU_X86_TBM"
+            }
+        ]
+    },
+    {
+        "description": "Add traits for POWER 8",
+        "conditions": [
+            {"op": "eq",
+             "field": "data://inventory.cpu.model_name",
+             "value": "POWER8E (raw), altivec supported"
+            }
+        ],
+        "actions": [
+            {"action": "add-trait",
+             "name": "HW_CPU_PPC64LE_POWER8"
+            }
+        ]
+    },
+    {
+        "description": "Add traits for POWER 9",
+        "conditions": [
+            {"op": "eq",
+             "field": "data://inventory.cpu.model_name",
+             "value": "POWER9, altivec supported"
+            }
+        ],
+        "actions": [
+            {"action": "add-trait",
+             "name": "HW_CPU_PPC64LE_POWER9"
+            }
+        ]
+    }
+]

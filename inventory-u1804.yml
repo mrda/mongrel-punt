@@ -1,0 +1,23 @@
+all:
+    hosts:
+        localhost:
+    vars:
+        libvirt_path: /home/libvirt
+        os: ubuntu18.04
+        name: u1804-20190813-2
+        url: INSTALL_OF_U1804_VIA_KS_DOES_NOT_WORK_PATCHES_WELCOME
+        disk_size: 60G
+        memory_size: 14888
+        ks_path: "{{ libvirt_path }}/ks"
+        image_path: "{{ libvirt_path }}/images"
+        disk_path: "{{ image_path }}/{{ name }}.raw"
+        extra_args: "ks=file:/u1804.ks console=tty0 console=ttyS0,115200n8 ip=::::u1804.example.com:enp2s0:dhcp::: nameserver=8.8.8.8"
+        devstack_password: p4ssw0rd
+        extra_openstack_pkgs:
+            - metalsmith
+            - os-traits
+    children:
+        hypervisors:
+            hosts:
+                localhost:
+        vms:
