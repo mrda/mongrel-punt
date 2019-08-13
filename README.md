@@ -22,8 +22,7 @@ But currently Fedora can't run an Ironicised devstack, due to virtual baremetal 
 U1804 is not supported for automated kickstart based builds (or is hard to work out without up to date documentation), so the play to build a VM is not complete.  You'll have to build that by hand first - see `doc/Building-U1804-VM.md` for ideas.  But once you've done that, you can use the included ansible plays to do intersting things, such as:
 
 * `ansible-playbook -K -i inventory-u1804.yaml playbooks/run-devstack.yml` which will set up your VM for running devstack
-** You'll need to edit inventory-u1804.yaml first to change the `name` of your VM
-** You can find out the IP address of your VM by running `ansible-playbook -K -i inventory-u1804.yaml playbooks/get-ip-address.yml`
-** Once this play has completed, you can `ssh root@<ipaddr>` and then run `cd /opt/stack/devstack; ./stack.sh` to start your devstack.  Note that it takes about 30 minutes or so to complete.
+  * You'll need to edit inventory-u1804.yaml first to change the `name` of your VM
+  * You can find out the IP address of your VM by running `ansible-playbook -K -i inventory-u1804.yaml playbooks/get-ip-address.yml`
+  * Once this play has completed, you can `ssh root@<ipaddr>` and then run `cd /opt/stack/devstack; ./stack.sh` to start your devstack.  Note that it takes about 30 minutes or so to complete.
 * `ansible-playbook -K -i inventory-u1804.yaml playbooks/inspect-nodes.yml` which places notes into maintenance mode, introspects them, and adds traits to them according to the introspection rules found in `/opt/stack/introspection`
-
