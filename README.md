@@ -8,7 +8,7 @@ More specifically, it's a set of Ansible plays to build VMs, run devstack on the
 ## Quickstart
 
 You can use mongrel-punt on the following operating systems:
-* Centos 7
+* Centos 7 (centos7)
 * Fedora 29 (f29)
 * Ubuntu 18.04 (u1804)
 
@@ -23,7 +23,7 @@ The very first thing you want to do is to update the `name:` definition.  It is 
 ### Plays
 
 * `build-vm.yml` - builds a virtual machine
-* `start-devstack.yml` - configures your VM ready to run devstack.  Note that currently it does not automatically start devstack.
+* `start-devstack.yml` - configures your VM and runs devstack.  
 * `introspect-nodes.yml` - performs introspection on the (nested) virtual baremetal nodes, adding traits to them
 
 Or, if you're feeling brave, you can run this one single play which invokes the above playbooks in sequence:
@@ -42,7 +42,7 @@ This is how a typical build will go.
 1. Choose your operating system
 1. Customise your inventory file, one of `[inventory-centos7.yml, inventory-f29.yml, inventory-u1804.yml]`
 1. Build your VM, either using a golden image or the build-vm.yml playbook.  i.e. `ansible-playbook  -K -i inventory-centos7.yml playbooks/build-vm.yml`
-1. Prepare your VM for devstack and start it going, noiting that it will take around 30 minutes before it completes. i.e. `ansible-playbook  -K -i inventory-centos7.yml playbooks/start-devstack.yml`
+1. Prepare your VM for devstack and start it going, noting that it will take around 30 minutes before it completes. i.e. `ansible-playbook  -K -i inventory-centos7.yml playbooks/start-devstack.yml`
 1. Introspect your nodes.  i.e. `ansible-playbook  -K -i inventory-centos7.yml playbooks/introspect-nodes.yml`
 
 ## Limitations
