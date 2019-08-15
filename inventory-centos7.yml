@@ -9,7 +9,7 @@ all:
         name: "{{ base_name }}-20190815-1"
         url: http://mirror.centos.org/centos/7/os/x86_64/
         disk_size: 60G
-        memory_size: 14888
+        memory_size: 12288
         ks_path: "{{ libvirt_path }}/ks"
         image_path: "{{ libvirt_path }}/images"
         disk_path: "{{ image_path }}/{{ name }}.raw"
@@ -19,6 +19,7 @@ all:
             - metalsmith
             - os-traits
         extra_path: ":/usr/sbin"  # Note leading :
+        ironic_victim_nodes: 2
     children:
         hypervisors:
             hosts:

@@ -19,6 +19,7 @@ all:
             - metalsmith
             - os-traits
         extra_path:
+        ironic_victim_nodes: 3
     children:
         hypervisors:
             hosts:
