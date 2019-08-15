@@ -65,10 +65,11 @@ U1804 is not supported for automated kickstart based builds (or is hard to work 
 
 What is the meaning of the term, "mongrel punt"?
 
-Australia's national sport is Australian Rules Football (AFL), which is different from rugby, gridiron and soccer.  It's a game where people kick the football, pass the football via punching ("handball"), ferociously tackle each other, and score by kicking the ball between the goal posts.
+Australia's national sport is Australian Rules Football (AFL)[1], which is different from rugby, gridiron and soccer.  It's a game where people kick the football, pass the football via punching ("handball"), ferociously tackle each other, and score by kicking the ball between the goal posts.
 
-A poorly executed kick is referred to as a "mongrel punt".  It gets the job done, but is not considered orthodox, reliable, or stylish.  According to wikipedia, it is "a tumbling, awkward looking kick"[1].  It describes what a set of Ansible plays to standup an OpenStack devstack is.
+A poorly executed kick is referred to as a "mongrel punt".  It gets the job done, but is not considered orthodox, reliable, or stylish.  According to wikipedia, it is "a tumbling, awkward looking kick"[2].  It describes what a set of Ansible plays to standup an OpenStack devstack is.
 
 Here's a video of what a mongrel punt is: https://www.youtube.com/watch?v=vNlm5Xwf51c
 
-[1] https://en.wikipedia.org/wiki/Glossary_of_Australian_rules_football
+[1] https://www.youtube.com/watch?v=XMZYZcoAcU0
+[2] https://en.wikipedia.org/wiki/Glossary_of_Australian_rules_football
