@@ -148,43 +148,39 @@
       dest: /opt/stack/introspection/rules.json
 
 # NOTE(mrda): As of 20190812, an f29 host does not properly bring up baremetal nodes
-#             Specifically, they drop into "clean failed" state.  So, for now, we
-#             don't automatically start devstack, as it'll never end, waiting for
-#             nodes to become available.
-#             Note this doesn't happen on an U1804 box, so it's Fedora specific, and
-#             I haven't been able to work out why yet.
-#
-#- name: Start devstack
-#  hosts: vms
-#  remote_user: stack
-#  tasks:
-#
-#  - name: start devstack
-#    shell: ./stack.sh
-#    args:
-#        chdir: /opt/stack/devstack
-#    register: stackoutout
-#
-#  - name: ensure devstack started correctly
-#    fail: msg="devstack didn't succeed"
-#    when: stackoutput.rc != 0
+#             Specifically, they drop into "clean failed" state.  Consequently the
+#             following play will fail on f29
 
-  - pause:
-      seconds: 30
-      prompt: |
-        ******************************************************************************
-        ******************************************************************************
-        **                                                                          **
-        **  We haven't started devstack, as an f29 host does not properly bring up  **
-        **  baremetal nodes - instead they drop into "clean failed" state, and the  **
-        **  stash.sh command never exits.                                           **
-        **                                                                          **
-        **  Instead, you should do the following, if you have built an U1804 vm:    **
-        **    ssh $IPADDR                                                           **
-        **    sudo su - stack                                                       **
-        **    cd /opt/stack/devstack                                                **
-        **    ./stack.sh                                                            **
-        **                                                                          **
-        ******************************************************************************
-        ******************************************************************************
+- name: Start devstack
+  hosts: vms
+  remote_user: stack
+  tasks:
+
+  - name: start devstack
+    shell: ./stack.sh
+    args:
+        chdir: /opt/stack/devstack
+    register: stackoutput
+
+  - name: ensure devstack started correctly
+    fail: msg="devstack didn't succeed"
+    when: stackoutput.rc != 0
+
+#  - pause:
+#      seconds: 30
+#      prompt: |
+#        ******************************************************************************
+#        ******************************************************************************
+#        **                                                                          **
+#        **  We haven't started devstack, as an f29 host does not properly bring up  **
+#        **  baremetal nodes - instead they drop into "clean failed" state, and the  **
+#        **  stack.sh command never exits.                                           **
+#        **                                                                          **
+#        **  Instead, you should do the following, if you have built an U1804 vm:    **
+#        **    ssh stack@$IPADDR                                                     **
+#        **    cd /opt/stack/devstack                                                **
+#        **    ./stack.sh                                                            **
+#        **                                                                          **
+#        ******************************************************************************
+#        ******************************************************************************
 

@@ -8,22 +8,29 @@ More specifically, it's a set of Ansible plays to build VMs, run devstack on the
 ## Quickstart
 
 You can use mongrel-punt on the following operating systems:
-* Fedora 29
-* Ubuntu 18.04
+* Centos 7
+* Fedora 29 (f29)
+* Ubuntu 18.04 (u1804)
 
-The problem is that both of these OSes don't work for different reasons.  Please see [Limitations](#limitations) for the reasons why.  But once you get past this, you can make use of the following plays.
+The problem is that both f29 and u1804 don't fully work for different reasons.  Please see [Limitations](#limitations) for the reasons why, and how you can work around these issues.  But once you address these, you can make use of the following plays.
 
 ### Inventory
 
 Each supported operating system has a separate inventory file `inventory-*.yml` in the top-level directory.  This is where you can customise what mongrel-punt will do.
 
-The very first thing you want to do is to update the `name:` definition.  It is suggested that you use `OS-date-rev`, where `OS` is `f29` or `u1804`; `date` is today's date in YYYYMMDD format i.e. 20190812; and `rev` is an integer indicating a revision number to distinguish multiple builds on the same day.
+The very first thing you want to do is to update the `name:` definition.  It is suggested that you use `OS-date-rev`, where `OS` is one of `[centos7, f29, u1804]`; `date` is today's date in YYYYMMDD format i.e. 20190812; and `rev` is an integer indicating a revision number to distinguish multiple builds on the same day.
 
 ### Plays
 
 * `build-vm.yml` - builds a virtual machine
 * `start-devstack.yml` - configures your VM ready to run devstack.  Note that currently it does not automatically start devstack.
 * `introspect-nodes.yml` - performs introspection on the (nested) virtual baremetal nodes, adding traits to them
+
+Or, if you're feeling brave, you can run this one single play which invokes the above playbooks in sequence:
+```sh
+ansible-playbook  -K -i inventory-centos7.yml playbooks/main.yml
+```
+(As a guide, running `playbooks/main.yml` takes around 52 minutes of wall clock time on a Lenovo X1 Carbon Gen 6 laptop)
 
 ### Utility Plays
 * `get-ip-address.yml` - returns you the routable IP address of the VM
@@ -33,32 +40,22 @@ The very first thing you want to do is to update the `name:` definition.  It is 
 This is how a typical build will go.
 
 1. Choose your operating system
-1. Customise your inventory file, either `inventory-f29.yml` or `inventory-u1804.yml`
-1. Build your VM, either using a golden image or the build-vm.yml playbook.  i.e. `ansible-playbook  -K -i inventory-f29.yml playbooks/build-vm.yml`
-1. Prepare your VM for devstack.  i.e. `ansible-playbook  -K -i inventory-f29.yml playbooks/start-devstack.yml`
-1. Right now you'll need to manually start devstack, so after the above step you'd want to do the following:
-    ```sh
-    [u@laptop mongrel-punt]$ ansible-playbook  -K -i inventory-f29.yml playbooks/get-ip-address.yml
-    [u@laptop mongrel-punt]$ ssh root@<IP address>
-    [root@f29 mongrel-punt]$ sudo su - stack 
-    [root@f29 mongrel-punt]$ cd /opt/stack/devstack
-    [root@f29 mongrel-punt]$ ./stack.sh
-    [root@f29 mongrel-punt]$ # Go and make a cup of coffee, this will take ~30 minutes
-    ```
-  
-1. Introspect your nodes.  i.e. `ansible-playbook  -K -i inventory-f29.yml playbooks/introspect-nodes.yml`
+1. Customise your inventory file, one of `[inventory-centos7.yml, inventory-f29.yml, inventory-u1804.yml]`
+1. Build your VM, either using a golden image or the build-vm.yml playbook.  i.e. `ansible-playbook  -K -i inventory-centos7.yml playbooks/build-vm.yml`
+1. Prepare your VM for devstack and start it going, noiting that it will take around 30 minutes before it completes. i.e. `ansible-playbook  -K -i inventory-centos7.yml playbooks/start-devstack.yml`
+1. Introspect your nodes.  i.e. `ansible-playbook  -K -i inventory-centos7.yml playbooks/introspect-nodes.yml`
 
 ## Limitations
 
-Right now, things are in a little bit of a mess.
+Right now, there are some challenges with two of the target operating systems:
 
 ### Fedora 29
 
 You can build a Fedora 29 VM by doing this:
 
-`ansible-playbook  -K -i inventory-f29.yaml playbooks/build-vm.yml`
+`ansible-playbook  -K -i inventory-f29.yml playbooks/build-vm.yml`
 
-But currently Fedora can't run an Ironicised devstack, due to virtual baremetal nodes entering "clean failed" state.  Once that is fixed upstream, you can follow [Running Plays](#Running-plays).
+But currently Fedora can't run an Ironic-ised devstack, due to virtual baremetal nodes entering "clean failed" state.  Once that is fixed upstream, you can follow [Running Plays](#Running-plays).
 
 ### Ubuntu 18.04
 

@@ -23,6 +23,9 @@
 
 - name: Find the baremetal nodes we want to operate on
   hosts: vms
+  remote_user: stack
+  environment:
+    PATH: "{{ ansible_env.PATH }}{{ extra_path }}"
   tasks:
 
   - name: find the baremetal nodes for each vm

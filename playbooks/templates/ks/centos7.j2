@@ -16,12 +16,13 @@ clearpart --all --drives=vda
 part / --fstype="xfs" --size=3000 --grow
 reboot
 
-repo --name="f29" --baseurl=https://mirror.aarnet.edu.au/pub/fedora/linux/releases/29/Server/x86_64/os/
+repo --name="centos7" --baseurl=http://mirror.centos.org/centos/7/os/x86_64/
 
 %packages
 @core
 kernel
 nfs-utils
+yum-utils
 
 # pull firmware packages out
 -aic94xx-firmware
@@ -57,13 +58,20 @@ tar
 tcpdump
 rsync
 
+# Some things from @core we can do without in a minimal install
+-biosdevname
+-plymouth
+-NetworkManager
+-iprutils
+
 # Misc bits
 vim-enhanced
-tmux
+screen
 wget
 
-# Development bits
+# Needed for devstack
 git
+libselinux-python
 
 %end
 
@@ -84,8 +92,8 @@ NOZEROCONF=yes
 EOF
 
 # Disable subscription-manager yum plugins
-#sed -i 's|^enabled=1|enabled=0|' /etc/yum/pluginconf.d/product-id.conf
-#sed -i 's|^enabled=1|enabled=0|' /etc/yum/pluginconf.d/subscription-manager.conf
+sed -i 's|^enabled=1|enabled=0|' /etc/yum/pluginconf.d/product-id.conf
+sed -i 's|^enabled=1|enabled=0|' /etc/yum/pluginconf.d/subscription-manager.conf
 
 echo "Cleaning old yum repodata."
 yum clean all
@@ -108,22 +116,22 @@ mkdir -p /var/cache/yum
 rm -f /var/lib/systemd/random-seed
 
 cat <<"EO_REPO" > /etc/yum.repos.d/base.repo
-[f29]
-name=f29
-baseurl=https://mirror.aarnet.edu.au/pub/fedora/linux/releases/29/Server/x86_64/os/
+[centos7]
+name=centos7
+baseurl=http://mirror.centos.org/centos/7/os/x86_64/
 enabled=1
 gpgcheck=0
 EO_REPO
 
 cat <<EO_HOSTS > /etc/hosts
-127.0.0.1   f29.example.com f29 localhost localhost.localdomain localhost4 localhost4.localdomain4
-::1         f29.example.com f29 localhost localhost.localdomain localhost6 localhost6.localdomain6
+127.0.0.1   centos7.example.com centos7 localhost localhost.localdomain localhost4 localhost4.localdomain4 director
+::1         centos7.example.com centos7 localhost localhost.localdomain localhost4 localhost4.localdomain4 director
 EO_HOSTS
 
-hostnamectl set-hostname f29
+hostnamectl set-hostname centos7
 
 # These two are needed for devstack
-dnf install -y rsync-daemon python2-libselinux
+# dnf install -y rsync-daemon python2-libselinux
 
 mkdir -p /root/.ssh
 echo "{{ user_ssh_pub_id.content | b64decode }}" >> /root/.ssh/authorized_keys

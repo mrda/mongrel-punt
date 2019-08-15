@@ -5,6 +5,22 @@
   handlers:
   tasks:
 
+    - name: stat the user's ssh public ident
+      stat:
+        path: "{{ user_ssh_pub_id_filename | expanduser }}"
+      register: user_ssh_pub_id_filename_result
+
+    - name: check to ensure we can read the user's ssh public id file
+      fail:
+        msg: Unable to find file "{{ user_ssh_pub_id_filename }}", please update your inventory
+      when: user_ssh_pub_id_filename_result.stat.exists == False
+
+    - name: grab the user's ssh public ident ready to inject it into the ks
+      slurp:
+        src: "{{ user_ssh_pub_id_filename }}"
+      register: user_ssh_pub_id
+      delegate_to: localhost
+
     - name: Ensure libvirt home dir exists
       become: yes
       file:
@@ -49,8 +65,8 @@
     - name: Write ks files
       become: yes
       template:
-        src: "ks/{{ name }}.j2"
-        dest: "{{ ks_path }}/{{ name }}.ks"
+        src: "ks/{{ base_name }}.j2"
+        dest: "{{ ks_path }}/{{ base_name }}.ks"
         owner: root
         group: root
         mode: u=rw,g=rw,o=r
@@ -75,7 +91,7 @@
 
     - name: Create a new sparse disk
       become: yes
-      shell: qemu-img create -f raw "{{ image_path }}/{{ name }}.raw" "{{ disk_size }}"
+      shell: qemu-img create -f raw "{{ disk_path }}" "{{ disk_size }}"
 
     - name: Build and install the VM
       become: yes
@@ -84,12 +100,12 @@
         --memory "{{ memory_size }}"
         --machine q35
         --vcpus sockets=1,cores=4,threads=1
-        --disk "{{ disk_path }}",format=raw,bus=virtio,cache=none
+        --disk "{{ disk_path }},format=raw,bus=virtio,cache=none"
         --os-variant "{{ os }}"
         --network network=default --network network=default
         --events on_reboot=destroy
         --location "{{ url }}"
-        --initrd-inject "{{ ks_path }}/{{ name }}".ks
+        --initrd-inject "{{ ks_path }}/{{ base_name }}.ks"
         --extra-args="{{ extra_args }}"
         --noautoconsole
 

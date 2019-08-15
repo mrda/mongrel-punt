@@ -4,16 +4,16 @@ all:
     vars:
         user_ssh_pub_id_filename: ~/.ssh/id_rsa.pub
         libvirt_path: /home/libvirt
-        os: ubuntu18.04
-        base_name: u1804
+        os: fedora29
+        base_name: f29
         name: "{{ base_name }}-20190815-1"
-        url: INSTALL_OF_U1804_VIA_KS_DOES_NOT_WORK_PATCHES_WELCOME
+        url: https://mirror.aarnet.edu.au/pub/fedora/linux/releases/29/Server/x86_64/os
         disk_size: 60G
         memory_size: 14888
         ks_path: "{{ libvirt_path }}/ks"
         image_path: "{{ libvirt_path }}/images"
         disk_path: "{{ image_path }}/{{ name }}.raw"
-        extra_args: "ks=file:/u1804.ks console=tty0 console=ttyS0,115200n8 ip=::::u1804.example.com:enp2s0:dhcp::: nameserver=8.8.8.8"
+        extra_args: "ks=file:/f29.ks console=tty0 console=ttyS0,115200n8 ip=::::f29.example.com:enp2s0:dhcp::: nameserver=8.8.8.8"
         devstack_password: p4ssw0rd
         extra_openstack_pkgs:
             - metalsmith
@@ -24,3 +24,4 @@ all:
             hosts:
                 localhost:
         vms:
+
