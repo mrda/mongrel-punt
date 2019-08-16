@@ -129,6 +129,7 @@ cat <<EO_HOSTS > /etc/hosts
 EO_HOSTS
 
 hostnamectl set-hostname centos7
+yum install -y ack
 
 # These two are needed for devstack
 # dnf install -y rsync-daemon python2-libselinux

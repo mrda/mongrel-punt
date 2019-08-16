@@ -125,7 +125,7 @@ EO_HOSTS
 hostnamectl set-hostname u1804
 
 # These two are needed for devstack
-dnf install -y rsync-daemon python2-libselinux
+apt install -y rsync-daemon python2-libselinux ack
 
 mkdir -p /root/.ssh
 echo "{{ user_ssh_pub_id.content | b64decode }}" >> /root/.ssh/authorized_keys
