@@ -1,0 +1,79 @@
+---
+- name: Find the IP address of the vm we want to act on and prepare for provisioning
+  hosts: localhost
+  tasks:
+
+  - name: grab a routed IP address for the vm
+    become: yes
+    shell: virsh domifaddr "{{ name }}" | tail -n +3 | awk '{print $4}' | cut -d'/' -f1 | while read ipa ; do ping -c1 $ipa >& /dev/null; [[ $? -eq 0 ]] && echo "$ipa" && break; done
+    register: ip_addr
+    delegate_to: localhost
+    until: ip_addr.rc == 0
+    delay: 10
+    retries: 12
+
+  - name: ensure we found an IP address for this vm
+    fail:
+      msg="Could not find IP Address for '{{ name }}'"
+    when: ip_addr.stdout is not defined or ip_addr.stdout == ""
+
+  - name: Add VM ip address to new groups vms
+    add_host:
+      name: "{{ ip_addr.stdout }}"
+      groups: vms
+
+- name: Setup vm to provision using metalsmith
+  hosts: vms
+  remote_user: stack
+  environment:
+    PATH: "{{ ansible_env.PATH }}{{ extra_path }}"
+  tasks:
+
+  - name: Install requirements for metalsmith
+    pip:
+      requirements: /opt/stack/metalsmith/requirements.txt
+      extra_args: -c  /opt/stack/requirements/upper-constraints.txt
+    become: true
+
+  - name: Install metalsmith
+    pip:
+      name: /opt/stack/metalsmith
+      editable: true
+    become: true
+
+  - name: stat the the ironic node image
+    stat:
+      path: "{{ node_img }}"
+    register: node_img_result
+
+  - name: verify that the node_img is available
+    fail:
+       msg: Unable to find file "{{ node_img }}" - this should have been deployed as part of devstack
+    when: node_img_result.stat.exists == False
+
+  - name: Calculate image checksum
+    shell:
+      md5sum "{{ node_img }}" | awk '{print $1}'
+    register: node_img_checksum
+
+  - name: Generate ssh key to inject into ironic node if one doesn't already exist
+    openssh_keypair:
+        path: /opt/stack/.ssh/id_rsa
+        type: rsa
+        size: 4096
+
+
+- name: Provision nodes based on trait using metalsmith
+  hosts: vms
+  remote_user: stack
+  environment:
+    PATH: "{{ ansible_env.PATH }}{{ extra_path }}"
+  tasks:
+
+  - name: provision node based on a trait
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        metalsmith deploy --image "file://{{ node_img }}" --image-checksum "{{ node_img_checksum.stdout }}" --network private --ssh-public-key /opt/stack/.ssh/id_rsa.pub --trait "{{ ironic_node_trait }}" --resource-class baremetal --root-size "{{ ironic_node_disk_size }}"
+    args:
+      executable: "/bin/bash"
+

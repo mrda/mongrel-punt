@@ -20,6 +20,9 @@ all:
             - os-traits
         extra_path:
         ironic_victim_nodes: 3
+        ironic_node_trait: HW_CPU_PPC64LE_POWER8
+        ironic_node_disk_size: 20
+        node_img: "/opt/stack/devstack/files/cirros-0.4.0-x86_64-disk.img"
     children:
         hypervisors:
             hosts:

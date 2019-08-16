@@ -1,0 +1,40 @@
+---
+- name: Find the IP address of the vm we want to act on and prepare for provisioning
+  hosts: localhost
+  tasks:
+
+  - name: grab a routed IP address for the vm
+    become: yes
+    shell: virsh domifaddr "{{ name }}" | tail -n +3 | awk '{print $4}' | cut -d'/' -f1 | while read ipa ; do ping -c1 $ipa >& /dev/null; [[ $? -eq 0 ]] && echo "$ipa" && break; done
+    register: ip_addr
+    delegate_to: localhost
+    until: ip_addr.rc == 0
+    delay: 10
+    retries: 12
+
+  - name: ensure we found an IP address for this vm
+    fail:
+      msg="Could not find IP Address for '{{ name }}'"
+    when: ip_addr.stdout is not defined or ip_addr.stdout == ""
+
+  - name: Add VM ip address to new groups vms
+    add_host:
+      name: "{{ ip_addr.stdout }}"
+      groups: vms
+
+
+- name: Add test data
+  hosts: vms
+  remote_user: stack
+  environment:
+    PATH: "{{ ansible_env.PATH }}{{ extra_path }}"
+  tasks:
+
+  - debug:
+      msg: "Adding trait to node-1 for debug purposes"
+  - name: Adding test data trait to node-1
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal node add trait node-1 "{{ ironic_node_trait }}"
+    args:
+      executable: "/bin/bash"
