@@ -1,0 +1,62 @@
+---
+- name: Find out the VM ip address
+  hosts: localhost
+  tasks:
+
+  - name: grab a routed IP address for the vm
+    become: yes
+    shell: |
+        virsh domifaddr "{{ name }}" |
+        tail -n +3 | awk '{print $4}' |
+        cut -d'/' -f1 |
+        while read ipa ; do
+            ping -c1 $ipa >& /dev/null;
+            [[ $? -eq 0 ]] && echo "$ipa" && break;
+        done
+    register: ip_addr
+    delegate_to: localhost
+    until: ip_addr.rc == 0
+    delay: 10
+    retries: 12
+
+  - name: ensure we found an IP address for this vm
+    fail: msg="Could not find IP Address for '{{ name }}'"
+    when: ip_addr.stdout is not defined or ip_addr.stdout == ""
+
+  - name: avoid the ssh host authentication query
+    shell: |
+      ssh -O exit "{{ ip_addr.stdout }}"
+      ssh-keygen -R "{{ ip_addr.stdout }}"
+      ssh -o StrictHostKeyChecking=no -v root@"{{ ip_addr.stdout }}" true
+    register: ssh_result
+    delegate_to: localhost
+    failed_when: (ssh_result.rc != 255 and ssh_result.rc != 0)
+    when: true  # avoid linting warning
+
+  - name: Add VM ip address to new groups vms
+    add_host:
+      name: "{{ ip_addr.stdout }}"
+      groups: vms
+
+- name: Support customised tinyipa images
+  remote_user: root
+  hosts: vms
+  tasks:
+
+  - name: check the source directory for tinyipa images exists
+    stat:
+      path: /tmp/ipa
+    register: ipa_dir
+    delegate_to: localhost
+
+  - fail:
+      msg: Unable to find source directory for custom ipa images
+    when: not ipa_dir.stat.exists and not ip_dir.stat.isdir
+
+  - name: copy tinyipa images into vm
+    copy:
+      src: "{{ item }}"
+      dest: /tmp
+    with_fileglob:
+      - /tmp/ipa/*
+
