@@ -6,7 +6,7 @@ all:
         libvirt_path: /home/libvirt
         os: centos7.0
         base_name: centos7
-        name: "{{ base_name }}-20190816-1"
+        name: "{{ base_name }}-20190821-3"
         url: http://mirror.centos.org/centos/7/os/x86_64/
         disk_size: 60G
         memory_size: 12288
@@ -23,6 +23,7 @@ all:
         ironic_node_trait: HW_CPU_PPC64LE_POWER8
         ironic_node_disk_size: 20
         node_img: "/opt/stack/devstack/files/cirros-0.4.0-x86_64-disk.img"
+        start_devstack: false
     children:
         hypervisors:
             hosts:

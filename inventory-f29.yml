@@ -6,7 +6,7 @@ all:
         libvirt_path: /home/libvirt
         os: fedora29
         base_name: f29
-        name: "{{ base_name }}-20190815-1"
+        name: "{{ base_name }}-20190820-1"
         url: https://mirror.aarnet.edu.au/pub/fedora/linux/releases/29/Server/x86_64/os
         disk_size: 60G
         memory_size: 14888
@@ -23,6 +23,7 @@ all:
         ironic_node_trait: HW_CPU_PPC64LE_POWER8
         ironic_node_disk_size: 20
         node_img: "/opt/stack/devstack/files/cirros-0.4.0-x86_64-disk.img"
+        start_devstack: false
     children:
         hypervisors:
             hosts:

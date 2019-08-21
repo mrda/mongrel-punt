@@ -14,6 +14,7 @@
         **                                                                                 **
         *************************************************************************************
         *************************************************************************************
+    when: start_devstack|bool
 
   - name: grab a routed IP address for the vm
     become: yes
@@ -55,98 +56,6 @@
   hosts: vms
   tasks:
 
-  - name: verify root can ssh into the new vm.  If not, you'll need to add that via an ssh-copy-id or similar outside these plays
-    become: yes
-    shell: date
-
-  - name: clone devstack
-    git:
-      repo: https://opendev.org/openstack/devstack.git
-      dest: /root/devstack
-
-  - name: build devstack prerequisites - create-stack-user.sh
-    become: yes
-    shell: /root/devstack/tools/create-stack-user.sh
-    register: createstackuser
-
-  - name: ensure /opt/stack has the correct perms
-    become: yes
-    file:
-      path: "/opt/stack"
-      state: directory
-      owner: stack
-      group: stack
-      mode: "u=rwx,g=rx,o=rx"
-
-  - name: ensure stack has a .ssh directory
-    become: yes
-    file:
-      path: "/opt/stack/.ssh"
-      state: directory
-      owner: stack
-      group: stack
-      mode: "u=rwx,og="
-
-  - name: allow authorised stack logins
-    become: yes
-    copy:
-        src: /root/.ssh/authorized_keys
-        dest: /opt/stack/.ssh/authorized_keys
-        remote_src: yes
-        owner: stack
-        group: stack
-        mode: u=rw,og=
-
-- name: Startup Devstack, patching for things that we want
-  remote_user: stack
-  hosts: vms
-  tasks:
-
-  - name: clone devstack
-    git:
-      repo: https://opendev.org/openstack/devstack.git
-      dest: /opt/stack/devstack
-
-  - name: Template copy an ironicised devstack's local.conf
-    template:
-        src: devstack/local.conf.ironic.j2
-        dest: /opt/stack/devstack/local.conf
-
-  - name: clone extra openstack repositories
-    git:
-      repo: "https://opendev.org/openstack/{{ item }}.git"
-      dest: "/opt/stack/{{ item }}"
-    with_items:
-      - "{{ extra_openstack_pkgs }}"
-
-  - name: ensure new required os-traits directory exists
-    become: yes
-    file:
-      path: "/opt/stack/os-traits/os_traits/hw/cpu"
-      state: directory
-      owner: stack
-      group: stack
-      mode: "u=rwx,g=rx,o=rx"
-
-  - name: copy in new code - os-traits ppc64le.py
-    copy:
-      src: files/ppc64le.py
-      dest: /opt/stack/os-traits/os_traits/hw/cpu/ppc64le.py
-
-  - name: ensure introspection rules directory exists
-    become: yes
-    file:
-      path: "/opt/stack/introspection"
-      state: directory
-      owner: stack
-      group: stack
-      mode: "u=rwx,g=rx,o=rx"
-
-  - name: copy in introspection rules
-    copy:
-      src: files/introspection-rules.json
-      dest: /opt/stack/introspection/rules.json
-
 # NOTE(mrda): As of 20190812, an f29 host does not properly bring up baremetal nodes
 #             Specifically, they drop into "clean failed" state.  Consequently the
 #             following play will fail on f29
@@ -161,26 +70,25 @@
     args:
         chdir: /opt/stack/devstack
     register: stackoutput
+    when: start_devstack|bool
 
   - name: ensure devstack started correctly
     fail: msg="devstack didn't succeed"
-    when: stackoutput.rc != 0
+    when: start_devstack|bool and stackoutput.rc != 0
 
-#  - pause:
-#      seconds: 30
-#      prompt: |
-#        ******************************************************************************
-#        ******************************************************************************
-#        **                                                                          **
-#        **  We haven't started devstack, as an f29 host does not properly bring up  **
-#        **  baremetal nodes - instead they drop into "clean failed" state, and the  **
-#        **  stack.sh command never exits.                                           **
-#        **                                                                          **
-#        **  Instead, you should do the following, if you have built an U1804 vm:    **
-#        **    ssh stack@$IPADDR                                                     **
-#        **    cd /opt/stack/devstack                                                **
-#        **    ./stack.sh                                                            **
-#        **                                                                          **
-#        ******************************************************************************
-#        ******************************************************************************
-
+  - pause:
+      seconds: 5
+      prompt: |
+        *********************************************************************
+        *********************************************************************
+        **                                                                 **
+        **  You've requested not to start devstack.                        **
+        **                                                                 **
+        **  If you want to do that manually, you should do the following:  **
+        **    ssh stack@$IPADDR                                            **
+        **    cd /opt/stack/devstack                                       **
+        **    ./stack.sh                                                   **
+        **                                                                 **
+        *********************************************************************
+        *********************************************************************
+    when: not start_devstack

@@ -1,4 +1,5 @@
 ---
 - import_playbook: build-vm.yml
+- import_playbook: prepare-devstack.yml
 - import_playbook: start-devstack.yml
 - import_playbook: introspect-nodes.yml
