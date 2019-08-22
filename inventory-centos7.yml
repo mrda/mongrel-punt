@@ -24,8 +24,8 @@ all:
         ironic_node_trait: HW_CPU_PPC64LE_POWER8
         ironic_node_disk_size: 20
         node_img: "/opt/stack/devstack/files/cirros-0.4.0-x86_64-disk.img"
-        start_devstack: false
-        ipa_agent_kernel_url: "file:///tmp/tinyipa.vml"
+        start_devstack: true
+        ipa_agent_kernel_url: "file:///tmp/tinyipa.vmlinuz"
         ipa_agent_ramdisk_url: "file:///tmp/tinyipa.gz"
     children:
         hypervisors:
