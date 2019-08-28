@@ -7,7 +7,7 @@ More specifically, it's a set of Ansible plays to build VMs, run devstack on the
 
 ## Quickstart
 
-You can use mongrel-punt on the following operating systems:
+mogrel-punt has been tested on Fedora 30.  You can use mongrel-punt to build VMs for the following operating systems:
 * Centos 7 (centos7)
 * Fedora 29 (f29)
 * Ubuntu 18.04 (u1804)
@@ -23,8 +23,9 @@ The very first thing you want to do is to update the `name:` definition.  It is 
 ### Plays
 
 * `build-vm.yml` - builds a virtual machine
-* `start-devstack.yml` - configures your VM and runs devstack.  
-* `introspect-nodes.yml` - performs introspection on the (nested) virtual baremetal nodes, adding traits to them
+* `prepare-devstack.yml` - configures your VM ready to run devstack
+* `start-devstack.yml` - runs devstack.  
+* `introspect-nodes.yml` - performs introspection on the (nested) virtual baremetal nodes, adding traits to them based upon instrospection rules configured in /opt/stack/introspection/rules.json
 
 Or, if you're feeling brave, you can run this one single play which invokes the above playbooks in sequence:
 ```sh
