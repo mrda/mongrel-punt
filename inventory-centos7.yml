@@ -6,7 +6,7 @@ all:
         libvirt_path: /home/libvirt
         os: centos7.0
         base_name: centos7
-        name: "{{ base_name }}-20190821-4"
+        name: "{{ base_name }}-20190903-1"
         url: http://mirror.centos.org/centos/7/os/x86_64/
         disk_size: 60G
         memory_size: 12288
@@ -18,7 +18,7 @@ all:
         extra_openstack_pkgs:
             - metalsmith
             - os-traits
-            - ironic
+            - ironic-inspector
         extra_path: ":/usr/sbin"  # Note leading :
         ironic_victim_nodes: 2
         ironic_node_trait: HW_CPU_PPC64LE_POWER8

@@ -74,8 +74,10 @@ IRONIC_VM_EPHEMERAL_DISK=0
 IRONIC_BUILD_DEPLOY_RAMDISK=False
 
 # Add in extra_hardware to IRONIC_INSPECTOR_COLLECTORS
+# Note that collectors need a - and processing hooks need an _
 IRONIC_INSPECTOR_COLLECTORS=default,logs,pci-devices,extra-hardware
 IRONIC_INSPECTOR_ALWAYS_STORE_RAMDISK_LOGS=True
+IRONIC_INSPECTOR_PROCESSING_HOOKS=extra_hardware
 
 VIRT_DRIVER=ironic
 

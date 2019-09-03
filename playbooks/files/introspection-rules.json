@@ -40,5 +40,19 @@
              "name": "HW_CPU_PPC64LE_POWER9"
             }
         ]
+    },
+    {
+        "description": "Add traits for auxv pagesz",
+        "conditions": [
+            {"op": "contains",
+             "field": "data://extra.hw.auxv.pagesz",
+             "value": "4096"
+            }
+        ],
+        "actions": [
+            {"action": "add-trait",
+             "name": "HW_GPU_RESOLUTION_W1920H1200"
+            }
+        ]
     }
 ]
