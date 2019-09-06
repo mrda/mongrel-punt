@@ -65,6 +65,24 @@
   remote_user: stack
   tasks:
 
+  - name: Check that devstack has what it needs to start successfully
+    stat:
+      path: "{{ item }}"
+    with_items:
+      - "{{ ipa_agent_kernel_url[7:] }}"
+      - "{{ ipa_agent_ramdisk_url[7:] }}"
+    register: file_deps
+
+  - fail:
+      msg: "{{ item }} not found"
+    with_items: "{{ file_deps.results }}"
+    when: not item.stat.exists
+
+  - debug:
+      msg: "{{ item.item }} is present in devstack"
+    with_items: "{{ file_deps.results }}"
+    when: item.stat.exists
+
   - name: start devstack
     shell: ./stack.sh
     args:
