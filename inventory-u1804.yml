@@ -2,11 +2,13 @@ all:
     hosts:
         localhost:
     vars:
+        git_user: "J Random"
+        git_email: "user@example.com"
         user_ssh_pub_id_filename: ~/.ssh/id_rsa.pub
         libvirt_path: /home/libvirt
         os: ubuntu18.04
         base_name: u1804
-        name: "{{ base_name }}-20190815-1"
+        name: "{{ base_name }}"
         url: INSTALL_OF_U1804_VIA_KS_DOES_NOT_WORK_PATCHES_WELCOME
         disk_size: 60G
         memory_size: 14888
@@ -18,7 +20,10 @@ all:
         extra_openstack_pkgs:
             - metalsmith
             - os-traits
-            - ironic
+            - ironic-python-agent-builder
+        patches_to_apply:
+            - { repo: "os-traits", cherry_pick: "https://review.opendev.org/openstack/os-traits refs/changes/80/680580/1" }
+            - { repo: "ironic-python-agent-builder", cherry_pick: "https://review.opendev.org/openstack/ironic-python-agent-builder refs/changes/35/679735/2" }
         extra_path:
         ironic_victim_nodes: 3
         ironic_node_trait: HW_CPU_PPC64LE_POWER8

@@ -106,20 +106,26 @@
       dest: "/opt/stack/{{ item }}"
     with_items:
       - "{{ extra_openstack_pkgs }}"
+    ignore_errors: yes
 
-  - name: ensure new required os-traits directory exists
-    become: yes
-    file:
-      path: "/opt/stack/os-traits/os_traits/hw/cpu"
-      state: directory
-      owner: stack
-      group: stack
-      mode: "u=rwx,g=rx,o=rx"
+  - name: Set up the user's name in git
+    git_config:
+      name: user.name
+      value: "{{ git_user }}"
+      scope: global
 
-  - name: copy in new code - os-traits ppc64le.py
-    copy:
-      src: files/ppc64le.py
-      dest: /opt/stack/os-traits/os_traits/hw/cpu/ppc64le.py
+  - name: Set up the user's email in git
+    git_config:
+      name: user.email
+      value: "{{ git_email }}"
+      scope: global
+
+  - name: cherry pick in patches from git repos
+    shell: "cd /opt/stack/{{ item.repo }} && git fetch {{ item.cherry_pick }} && git cherry-pick FETCH_HEAD"
+    with_items:
+      - "{{ patches_to_apply }}"
+    # We don't want to ignore errors here as if we are trying to cherry-pick in changes, we can't have local
+    # conflicting changes
 
   - name: ensure introspection rules directory exists
     become: yes
