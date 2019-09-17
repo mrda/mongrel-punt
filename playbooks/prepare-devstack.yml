@@ -105,8 +105,16 @@
       repo: "https://opendev.org/openstack/{{ item }}.git"
       dest: "/opt/stack/{{ item }}"
     with_items:
-      - "{{ extra_openstack_pkgs }}"
+      - "{{ required_extra_openstack_pkgs }}"
+      - "{{ patched_openstack_pkgs }}"
     ignore_errors: yes
+
+  - name: clone extra non-openstack repositories
+    git:
+      repo: "{{ item.repo }}"
+      dest: "/opt/stack/{{ item.name }}"
+    with_items:
+      - "{{ required_extra_repos }}"
 
   - name: Set up the user's name in git
     git_config:

@@ -17,10 +17,14 @@ all:
         disk_path: "{{ image_path }}/{{ name }}.raw"
         extra_args: "ks=file:/centos7.ks console=tty0 console=ttyS0,115200n8 ip=::::centos7.example.com:eth1:dhcp::: nameserver=8.8.8.8"
         devstack_password: p4ssw0rd
-        extra_openstack_pkgs:
+        required_extra_openstack_pkgs:
             - metalsmith
-            - os-traits
+            - ironic-python-agent
             - ironic-python-agent-builder
+        required_extra_repos:
+            - { name: "hardware", repo: "https://github.com/redhat-cip/hardware.git" }
+        patched_openstack_pkgs:
+            - os-traits
         patches_to_apply:
             - { repo: "os-traits", cherry_pick: "https://review.opendev.org/openstack/os-traits refs/changes/80/680580/1" }
             - { repo: "ironic-python-agent-builder", cherry_pick: "https://review.opendev.org/openstack/ironic-python-agent-builder refs/changes/35/679735/2" }
@@ -29,6 +33,7 @@ all:
         ironic_node_trait: HW_CPU_PPC64LE_POWER8
         ironic_node_disk_size: 20
         node_img: "/opt/stack/devstack/files/cirros-0.4.0-x86_64-disk.img"
+        ipa_output_dir: "/opt/stack/ipa"
         start_devstack: true
         ipa_agent_kernel_url: "file:///tmp/tinyipa.vmlinuz"
         ipa_agent_ramdisk_url: "file:///tmp/tinyipa.gz"
