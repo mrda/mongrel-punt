@@ -4,6 +4,7 @@ all:
     vars:
         git_user: "J Random"
         git_email: "user@example.com"
+        user_ssh_dir: ~/.ssh
         user_ssh_pub_id_filename: ~/.ssh/id_rsa.pub
         libvirt_path: /home/libvirt
         os: fedora29
@@ -33,7 +34,7 @@ all:
         ironic_node_trait: HW_CPU_PPC64LE_POWER8
         ironic_node_disk_size: 20
         node_img: "/opt/stack/devstack/files/cirros-0.4.0-x86_64-disk.img"
-        ipa_output_dir: "/opt/stack/ipa"
+        ipa_output_dir: "/opt/stack/ipa/"
         start_devstack: false
         ipa_agent_kernel_url: "file:///tmp/tinyipa.vmlinuz"
         ipa_agent_ramdisk_url: "file:///tmp/tinyipa.gz"

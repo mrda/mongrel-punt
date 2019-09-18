@@ -1,0 +1,121 @@
+---
+- name: Build a custom ipa image
+  hosts: localhost
+  tasks:
+
+  - name: grab a routed IP address for the vm
+    become: yes
+    shell: |
+        virsh domifaddr "{{ name }}" |
+        tail -n +3 | awk '{print $4}' |
+        cut -d'/' -f1 |
+        while read ipa ; do
+            ping -c1 $ipa >& /dev/null;
+            [[ $? -eq 0 ]] && echo "$ipa" && break;
+        done
+    register: ip_addr
+    delegate_to: localhost
+    until: ip_addr.rc == 0
+    delay: 10
+    retries: 12
+
+  - name: ensure we found an IP address for this vm
+    fail: msg="Could not find IP Address for '{{ name }}'"
+    when: ip_addr.stdout is not defined or ip_addr.stdout == ""
+
+  - name: avoid the ssh host authentication query
+    shell: |
+      ssh -O exit "{{ ip_addr.stdout }}"
+      ssh-keygen -R "{{ ip_addr.stdout }}"
+      ssh -o StrictHostKeyChecking=no -v root@"{{ ip_addr.stdout }}" true
+    register: ssh_result
+    delegate_to: localhost
+    failed_when: (ssh_result.rc != 255 and ssh_result.rc != 0)
+    when: true  # avoid linting warning
+
+  - name: Add VM ip address to new groups vms
+    add_host:
+      name: "{{ ip_addr.stdout }}"
+      groups: vms
+
+
+- name: Prepare localhost
+  hosts: localhost
+  tasks:
+
+  - name: ensure local .ssh dir
+    become: yes
+    file:
+      path: "{{ user_ssh_dir | expanduser }}"
+      state: directory
+      mode: "u=rwx,og="
+    delegate_to: localhost
+
+  - name: Generate local ssh keys if needed
+    openssh_keypair:
+      path: "{{ user_ssh_dir | expanduser }}/id_mongrel_punt"
+      type: rsa
+      size: 4096
+    delegate_to: localhost
+
+
+- name: Build IPA image
+  remote_user: root
+  hosts: vms
+  environment:
+    BUILD_AND_INSTALL_TINYIPA: true
+    IPA_SOURCE_DIR: /opt/stack/ironic-python-agent
+    PYTHON_EXTRA_SOURCES_DIR_LIST: /opt/stack/hardware
+    AUTHORIZE_SSH: true
+    SSH_PUBLIC_KEY: "{{ user_ssh_dir | expanduser }}/id_mongrel_punt.pub"
+  tasks:
+
+  - name: ensure .ssh dir
+    become: yes
+    file:
+      path: /opt/stack/.ssh/
+      state: directory
+      owner: stack
+      group: stack
+      mode: "u=rwx,og="
+
+  - name: copy mongrel punt ssh keys in
+    copy:
+      src: "{{ item }}"
+      dest: /opt/stack/.ssh
+      owner: stack
+      group: stack
+    with_fileglob:
+      - "{{ user_ssh_dir | expanduser }}/id_mongrel_punt"
+      - "{{ user_ssh_dir | expanduser }}/id_mongrel_punt.pub"
+
+  - name: Build the image.  This will take a long time...
+    shell: |
+      cd /opt/stack/ironic-python-agent-builder/tinyipa/
+      time make
+    register: make_result
+
+#  - debug:
+#      msg: "Debug output is {{ make_result }}"
+
+  - name: ensure $IPA_DIR exists
+    become: yes
+    file:
+      path: "{{ ipa_output_dir }}"
+      state: directory
+      mode: "a=rwx"
+    delegate_to: localhost
+
+  - name: grab the files we need to copy
+    find:
+      paths: /opt/stack/ironic-python-agent-builder/tinyipa
+      patterns: "tinyipa*.tar.gz*,tinyipa*.*,tiny-instance-uec*.tar.gz"
+    register: files_to_copy
+
+  - name: copy tinyipa images back onto localhost
+    fetch:
+      src: "{{ item['path'] }}"
+      dest: "{{ ipa_output_dir }}"
+      flat: yes
+    with_items:
+        - "{{ files_to_copy.files }}"
