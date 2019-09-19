@@ -1,4 +1,15 @@
 ---
+
+- name: Initial guards
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: Check for known problematic operating systems
+    fail:
+      msg: "{{ os }} is known to be unable to build a tinyipa image. Exiting..."
+    when: os == "centos7.0"
+
 - name: Build a custom ipa image
   hosts: localhost
   tasks:
