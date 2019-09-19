@@ -12,7 +12,7 @@ mogrel-punt has been tested on Fedora 30.  You can use mongrel-punt to build VMs
 * Fedora 29 (f29)
 * Ubuntu 18.04 (u1804)
 
-The problem is that both f29 and u1804 don't fully work for different reasons.  Please see [Limitations](#limitations) for the reasons why, and how you can work around these issues.  But once you address these, you can make use of the following plays.
+The problem is that several operating systems don't fully work for various reasons.  Please see [Limitations](#limitations) for the reasons why, and how you can work around these issues.  But once you address these, you can make use of the following plays.
 
 ### Inventory
 
@@ -24,17 +24,21 @@ The very first thing you want to do is to update the `name:` definition.  It is 
 
 * `build-vm.yml` - builds a virtual machine
 * `prepare-devstack.yml` - configures your VM ready to run devstack
+* `build-ipa-image.yml` - builds a customised tinyipa image for introspection
 * `start-devstack.yml` - runs devstack.  
-* `introspect-nodes.yml` - performs introspection on the (nested) virtual baremetal nodes, adding traits to them based upon instrospection rules configured in /opt/stack/introspection/rules.json
+* `introspect-nodes.yml` - performs introspection on the (nested) virtual baremetal nodes, adding traits to them based upon instrospection rules configured in `/opt/stack/introspection/rules.json`
 
 Or, if you're feeling brave, you can run this one single play which invokes the above playbooks in sequence:
 ```sh
 ansible-playbook  -K -i inventory-centos7.yml playbooks/main.yml
 ```
-(As a guide, running `playbooks/main.yml` takes around 52 minutes of wall clock time on a Lenovo X1 Carbon Gen 6 laptop)
+Note: Currently there is no currently supported operating system version that can do this.  Please see [Limitations](#limitations).
+
+(As a guide, running `playbooks/main.yml` would takes around 110 minutes of wall clock time on a Lenovo X1 Carbon Gen 6 laptop)
 
 ### Utility Plays
 * `get-ip-address.yml` - returns you the routable IP address of the VM
+* `introspect-nodes.yml` - perform ironic introspection on baremetal nodes
 
 ### Running plays
 
@@ -43,12 +47,20 @@ This is how a typical build will go.
 1. Choose your operating system
 1. Customise your inventory file, one of `[inventory-centos7.yml, inventory-f29.yml, inventory-u1804.yml]`
 1. Build your VM, either using a golden image or the build-vm.yml playbook.  i.e. `ansible-playbook  -K -i inventory-centos7.yml playbooks/build-vm.yml`
-1. Prepare your VM for devstack and start it going, noting that it will take around 30 minutes before it completes. i.e. `ansible-playbook  -K -i inventory-centos7.yml playbooks/start-devstack.yml`
+1. Prepare your VM for devstack. i.e. `ansible-playbook  -K -i inventory-centos7.yml playbooks/prepare-devstack.yml`
+1. Build a customised tinyipa image.  i.e. `ansible-playbook  -K -i inventory-f29.yml playbooks/build-ipa-image.yml`
+1. Start devstack, noting that it will take around 30 minutes before it completes. i.e. `ansible-playbook  -K -i inventory-centos7.yml playbooks/start-devstack.yml`
 1. Introspect your nodes.  i.e. `ansible-playbook  -K -i inventory-centos7.yml playbooks/introspect-nodes.yml`
 
 ## Limitations
 
-Right now, there are some challenges with two of the target operating systems:
+Right now, there are some challenges with various target operating systems.
+
+|              | build-vm | prepare-devstack | build-ipa-image | provide-tinyipa | start-devstack |
+|:------------:|:--------:|:----------------:|:---------------:|:---------------:|:--------------:|
+| Fedora 29    |:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:               |
+| Ubuntu 18.04 |:x:               |:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|
+| Centos 7     |:heavy_check_mark:|:heavy_check_mark:|:x:               |:heavy_check_mark:|:heavy_check_mark:|
 
 ### Fedora 29
 
@@ -61,6 +73,10 @@ But currently Fedora can't run an Ironic-ised devstack, due to virtual baremetal
 ### Ubuntu 18.04
 
 U1804 is not supported for automated kickstart based builds (or is hard to work out without up to date documentation), so the play to build a VM is not complete.  You'll have to build that by hand first - see [Building an U18.04 VM](doc/Building-U1804-VM.md) for ideas.  After that's done, you can follow [Running Plays](#Running-plays).
+
+### Centos 7
+
+Centos 7 uses an old kernel version, which is too old for "ironic-python-agent-builder" to use.  Instead, use either Ubuntu 18.04 or Fedora 29 to build your customised tinyipa images for baremetal node introspection.
 
 ## Colophon
 
