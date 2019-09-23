@@ -1,5 +1,0 @@
----
-- import_playbook: build-vm.yml
-- import_playbook: prepare-devstack.yml
-- import_playbook: provide-tinyipa.yml
-- import_playbook: start-devstack.yml

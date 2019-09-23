@@ -1,0 +1,15 @@
+---
+- name: Initial guards
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: Check for known problematic operating systems
+    fail:
+      msg: "{{ os }} is known to be unable to run devstack. Exiting..."
+    when: os == "fedora29"
+
+- import_playbook: build-vm.yml
+- import_playbook: prepare-devstack.yml
+- import_playbook: provide-tinyipa.yml
+- import_playbook: start-devstack.yml
