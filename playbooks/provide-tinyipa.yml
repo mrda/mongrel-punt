@@ -45,7 +45,7 @@
 
   - name: check the source directory for tinyipa images exists
     stat:
-      path: /tmp/ipa
+      path: "{{ ipa_output_dir }}"
     register: ipa_dir
     delegate_to: localhost
 
@@ -53,10 +53,10 @@
       msg: Unable to find source directory for custom ipa images
     when: not ipa_dir.stat.exists and not ip_dir.stat.isdir
 
-  - name: copy tinyipa images into vm
+  - name: copy tinyipa image into vm
     copy:
       src: "{{ item }}"
       dest: /tmp
-    with_fileglob:
-      - /tmp/ipa/*
-
+    with_items:
+      - "{{ ipa_output_dir }}{{ ipa_agent_kernel[5:] }}"
+      - "{{ ipa_output_dir}}{{ ipa_agent_ramdisk[5:] }}"

@@ -69,8 +69,8 @@
     stat:
       path: "{{ item }}"
     with_items:
-      - "{{ ipa_agent_kernel_url[7:] }}"
-      - "{{ ipa_agent_ramdisk_url[7:] }}"
+      - "{{ ipa_agent_kernel }}"
+      - "{{ ipa_agent_ramdisk }}"
     register: file_deps
 
   - fail:

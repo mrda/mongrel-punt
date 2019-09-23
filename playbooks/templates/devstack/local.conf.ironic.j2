@@ -83,8 +83,8 @@ VIRT_DRIVER=ironic
 
 # Using our own IPA, so we get extra_hardware support
 IRONIC_RAMDISK_TYPE=tinyipa
-IRONIC_AGENT_KERNEL_URL="{{ ipa_agent_kernel_url }}"
-IRONIC_AGENT_RAMDISK_URL="{{ ipa_agent_ramdisk_url }}"
+IRONIC_AGENT_KERNEL_URL="file://{{ ipa_agent_kernel }}"
+IRONIC_AGENT_RAMDISK_URL="file://{{ ipa_agent_ramdisk }}"
 
 # By default, DevStack creates a 10.0.0.0/24 network for instances.
 # If this overlaps with the hosts network, you may adjust with the

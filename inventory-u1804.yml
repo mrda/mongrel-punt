@@ -36,8 +36,8 @@ all:
         node_img: "/opt/stack/devstack/files/cirros-0.4.0-x86_64-disk.img"
         ipa_output_dir: "/opt/ipa/"
         start_devstack: true
-        ipa_agent_kernel_url: "file:///tmp/tinyipa.vmlinuz"
-        ipa_agent_ramdisk_url: "file:///tmp/tinyipa.gz"
+        ipa_agent_kernel: "/tmp/tinyipa.vmlinuz"
+        ipa_agent_ramdisk: "/tmp/tinyipa.gz"
     children:
         hypervisors:
             hosts:
