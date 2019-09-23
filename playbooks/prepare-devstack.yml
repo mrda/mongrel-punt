@@ -1,42 +1,5 @@
 ---
-- name: Prepare to run devstack
-  hosts: localhost
-  tasks:
-
-  - name: grab a routed IP address for the vm
-    become: yes
-    shell: |
-        virsh domifaddr "{{ name }}" |
-        tail -n +3 | awk '{print $4}' |
-        cut -d'/' -f1 |
-        while read ipa ; do
-            ping -c1 $ipa >& /dev/null;
-            [[ $? -eq 0 ]] && echo "$ipa" && break;
-        done
-    register: ip_addr
-    delegate_to: localhost
-    until: ip_addr.rc == 0
-    delay: 10
-    retries: 12
-
-  - name: ensure we found an IP address for this vm
-    fail: msg="Could not find IP Address for '{{ name }}'"
-    when: ip_addr.stdout is not defined or ip_addr.stdout == ""
-
-  - name: avoid the ssh host authentication query
-    shell: |
-      ssh -O exit "{{ ip_addr.stdout }}"
-      ssh-keygen -R "{{ ip_addr.stdout }}"
-      ssh -o StrictHostKeyChecking=no -v root@"{{ ip_addr.stdout }}" true
-    register: ssh_result
-    delegate_to: localhost
-    failed_when: (ssh_result.rc != 255 and ssh_result.rc != 0)
-    when: true  # avoid linting warning
-
-  - name: Add VM ip address to new groups vms
-    add_host:
-      name: "{{ ip_addr.stdout }}"
-      groups: vms
+- import_playbook: get-vm-ip-address.yml
 
 - name: Get Devstack ready for running
   remote_user: root
@@ -85,7 +48,7 @@
         group: stack
         mode: u=rw,og=
 
-- name: Startup Devstack, patching for things that we want
+- name: Clone and patch Devstack
   remote_user: stack
   hosts: vms
   tasks:
