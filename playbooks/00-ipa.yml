@@ -13,3 +13,4 @@
 - import_playbook: build-vm.yml
 - import_playbook: prepare-devstack.yml
 - import_playbook: build-ipa-image.yml
+- import_playbook: copy-ipa-image.yml

@@ -1,0 +1,21 @@
+---
+- import_playbook: get-vm-ip-address.yml
+
+- name: Copy IPA image
+  remote_user: root
+  hosts: vms
+  tasks:
+
+  - name: grab the files we need to copy
+    find:
+      paths: /opt/stack/ironic-python-agent-builder/tinyipa
+      patterns: "tinyipa*.tar.gz*,tinyipa*.*,tiny-instance-uec*.tar.gz"
+    register: files_to_copy
+
+  - name: copy tinyipa images back onto localhost
+    fetch:
+      src: "{{ item['path'] }}"
+      dest: "{{ ipa_output_dir }}"
+      flat: yes
+    with_items:
+        - "{{ files_to_copy.files }}"
