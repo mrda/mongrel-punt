@@ -67,14 +67,11 @@
       cd /opt/stack/ironic-python-agent-builder/tinyipa/
       make clean
 
-  - name: Build the image.  This will take a long time...
+  - name: Build the image. Logging available at localhost:/tmp/ipa-build-log.txt
     shell: |
       cd /opt/stack/ironic-python-agent-builder/tinyipa/
-      time make
+      time make >& /tmp/ipa-build-log.txt
     register: make_result
-
-#  - debug:
-#      msg: "Debug output is {{ make_result }}"
 
   - name: ensure $IPA_DIR exists
     become: yes
