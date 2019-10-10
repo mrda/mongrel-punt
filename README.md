@@ -9,6 +9,7 @@ More specifically, it's a set of Ansible plays to build VMs, run devstack on the
 
 mogrel-punt has been tested on Fedora 30.  You can use mongrel-punt to build VMs for the following operating systems:
 * Centos 7 (centos7)
+* Centos 8 (centos8)
 * Fedora 29 (f29)
 * Ubuntu 18.04 (u1804)
 
@@ -61,6 +62,7 @@ Right now, there are some challenges with various target operating systems.
 | Fedora 29    |:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:               |
 | Ubuntu 18.04 |:x:               |:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|
 | Centos 7     |:heavy_check_mark:|:heavy_check_mark:|:x:               |:heavy_check_mark:|:heavy_check_mark:|
+| Centos 8     |:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:heavy_check_mark:|:x:|
 
 ### Fedora 29
 
@@ -77,6 +79,10 @@ U1804 is not supported for automated kickstart based builds (or is hard to work 
 ### Centos 7
 
 Centos 7 uses an old kernel version, which is too old for "ironic-python-agent-builder" to use.  Instead, use either Ubuntu 18.04 or Fedora 29 to build your customised tinyipa images for baremetal node introspection.
+
+### Centos 8
+
+Centos 8 is supported for all operations, except for actually running devstack.  It is expected that support for Centos 8 / RHEL-8 will be added to devstack, but it is not yet available.
 
 ## Colophon
 
