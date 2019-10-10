@@ -1,0 +1,142 @@
+text
+keyboard us
+lang en_US.UTF-8
+skipx
+network --device enp1s0 --bootproto=dhcp
+network --device enp2s0 --bootproto=dhcp
+url --url="http://mirror.centos.org/centos-8/8/BaseOS/x86_64/os"
+rootpw --iscrypted $1$e8845rHE$ZqkmfJE.5mp13TbX6wrmc1
+firewall --disabled
+authconfig --enableshadow --enablemd5
+selinux --enforcing
+timezone --utc America/New_York
+clearpart --all --drives=vda
+part biosboot --fstype=biosboot --size=1
+part / --fstype="xfs" --size=3000 --grow
+bootloader --location=mbr --append="console=tty0 console=ttyS0,115200n8"
+reboot
+
+repo --name="centos8" --baseurl=http://mirror.centos.org/centos/8/BaseOS/x86_64/os
+
+%packages
+@core
+kernel
+nfs-utils
+yum-utils
+
+# pull firmware packages out
+-aic94xx-firmware
+-alsa-firmware
+-alsa-lib
+-alsa-tools-firmware
+-ivtv-firmware
+-iwl1000-firmware
+-iwl100-firmware
+-iwl105-firmware
+-iwl135-firmware
+-iwl2000-firmware
+-iwl2030-firmware
+-iwl3160-firmware
+-iwl3945-firmware
+-iwl4965-firmware
+-iwl5000-firmware
+-iwl5150-firmware
+-iwl6000-firmware
+-iwl6000g2a-firmware
+-iwl6000g2b-firmware
+-iwl6050-firmware
+-iwl7260-firmware
+-libertas-sd8686-firmware
+-libertas-sd8787-firmware
+-libertas-usb8388-firmware
+
+# Needed initially, but removed below.
+firewalld
+
+# cherry-pick a few things from @base
+tar
+tcpdump
+rsync
+
+# Some things from @core we can do without in a minimal install
+-biosdevname
+-plymouth
+-iprutils
+
+# Misc bits
+vim-enhanced
+wget
+
+# Needed for devstack
+git
+python3-libselinux
+
+%end
+
+#
+# Add custom post scripts after the base post.
+#
+%post --erroronfail
+
+# Remove firewalld; it is required to be present for install/image building.
+#echo "Removing firewalld."
+#yum -C -y remove firewalld --setopt="clean_requirements_on_remove=1"
+
+echo -n "Network fixes"
+# initscripts don't like this file to be missing.
+cat > /etc/sysconfig/network << EOF
+NETWORKING=yes
+NOZEROCONF=yes
+EOF
+
+# Disable subscription-manager yum plugins
+sed -i 's|^enabled=1|enabled=0|' /etc/yum/pluginconf.d/product-id.conf
+sed -i 's|^enabled=1|enabled=0|' /etc/yum/pluginconf.d/subscription-manager.conf
+
+echo "Cleaning old yum repodata."
+yum clean all
+
+# clean up installation logs"
+rm -rf /var/log/yum.log
+rm -rf /var/lib/yum/*
+rm -rf /root/install.log
+rm -rf /root/install.log.syslog
+rm -rf /root/anaconda-ks.cfg
+rm -rf /var/log/anaconda*
+
+echo "Fixing SELinux contexts."
+touch /var/log/cron
+touch /var/log/boot.log
+mkdir -p /var/cache/yum
+/usr/sbin/fixfiles -R -a restore
+
+# remove random-seed so it's not the same every time
+rm -f /var/lib/systemd/random-seed
+
+cat <<"EO_REPO" > /etc/yum.repos.d/base.repo
+[centos8]
+name=centos8
+baseurl=http://mirror.centos.org/centos/8/BaseOS/x86_64/os
+enabled=1
+gpgcheck=0
+EO_REPO
+
+cat <<EO_HOSTS > /etc/hosts
+127.0.0.1   centos8.example.com centos8 localhost localhost.localdomain localhost4 localhost4.localdomain4 director
+::1         centos8.example.com centos8 localhost localhost.localdomain localhost4 localhost4.localdomain4 director
+EO_HOSTS
+
+hostnamectl set-hostname centos8
+yum install -y ack
+
+# Enable epel-8
+dnf config-manager --set-enabled PowerTools
+yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+yum install -y screen
+
+mkdir -p /root/.ssh
+echo "{{ user_ssh_pub_id.content | b64decode }}" >> /root/.ssh/authorized_keys
+chmod 0700 /root/.ssh
+chmod 0600 /root/.ssh/authorized_keys
+
+%end

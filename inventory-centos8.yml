@@ -1,0 +1,45 @@
+all:
+    hosts:
+        localhost:
+            ansible_python_interpreter: /usr/bin/python
+    vars:
+        git_user: "J Random"
+        git_email: "user@example.com"
+        user_ssh_dir: ~/.ssh
+        user_ssh_pub_id_filename: ~/.ssh/id_rsa.pub
+        libvirt_path: /home/libvirt
+        os: centos7.0
+        base_name: centos8
+        name: "{{ base_name }}"
+        url: http://mirror.centos.org/centos/8/BaseOS/x86_64/kickstart
+        disk_size: 60G
+        memory_size: 12288
+        ks_path: "{{ libvirt_path }}/ks"
+        image_path: "{{ libvirt_path }}/images"
+        disk_path: "{{ image_path }}/{{ name }}.raw"
+        extra_args: "ks=file:/centos8.ks console=tty0 console=ttyS0,115200n8 ip=::::centos8.example.com:enp1s0:dhcp::: nameserver=8.8.8.8"
+        devstack_password: p4ssw0rd
+        required_extra_openstack_pkgs:
+            - metalsmith
+            - ironic-python-agent
+            - ironic-python-agent-builder
+        required_extra_repos:
+            - { name: "hardware", repo: "https://github.com/redhat-cip/hardware.git" }
+        patched_openstack_pkgs:
+            - os-traits
+        patches_to_apply:
+            - { repo: "ironic-python-agent-builder", cherry_pick: "https://review.opendev.org/openstack/ironic-python-agent-builder refs/changes/35/679735/2" }
+        extra_path: ":/usr/sbin"  # Note leading :
+        ironic_victim_nodes: 2
+        ironic_node_trait: HW_CPU_PPC64LE_POWER8
+        ironic_node_disk_size: 20
+        node_img: "/opt/stack/devstack/files/cirros-0.4.0-x86_64-disk.img"
+        ipa_output_dir: "/opt/ipa/"
+        start_devstack: true
+        ipa_agent_kernel: "/tmp/tinyipa.vmlinuz"
+        ipa_agent_ramdisk: "/tmp/tinyipa.gz"
+    children:
+        hypervisors:
+            hosts:
+                localhost:
+        vms:
