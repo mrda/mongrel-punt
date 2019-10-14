@@ -37,6 +37,17 @@ all:
         start_devstack: true
         ipa_agent_kernel: "/tmp/tinyipa.vmlinuz"
         ipa_agent_ramdisk: "/tmp/tinyipa.gz"
+        ironic_bridge_name: virbr0
+        ironic_network_parms: "network=default"
+        ironic_nodes:
+            i_node_1:
+                disk: 10G
+                ram: 3072
+                bmc_ip: 192.168.77.3
+            i_node_2:
+                disk: 10G
+                ram: 3072
+                bmc_ip: 192.168.77.4
     children:
         hypervisors:
             hosts:

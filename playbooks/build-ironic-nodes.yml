@@ -1,0 +1,69 @@
+---
+
+- name: Setup the ironic victim nodes
+  hosts: hypervisors
+  handlers:
+  tasks:
+
+    - name: Check vbmc is available
+      stat:
+        path: /opt/vbmc/bin/vbmc
+      register: vmbc
+
+    - name:  Install vbmc from pypi
+      shell: |
+          python3 -m venv /opt/vbmc
+          /opt/vbmc/bin/pip install -U pip setuptools wheel
+          /opt/vbmc/bin/pip install virtualbmc
+      when:
+        - not vmbc.stat.exists
+
+    - name: Delete existing ironic nodes
+      become: yes
+      shell: |
+        /opt/vbmc/bin/vbmc stop {{ item }}
+        /opt/vbmc/bin/vbmc delete {{ item }}
+        virsh destroy {{ item }}
+        virsh undefine {{ item }}
+      with_items:
+        - "{{ ironic_nodes.keys()|list }}"
+      ignore_errors: yes
+      tags: cleanup
+
+    - name: stop vbmc
+      command: killall vbmc
+      become: yes
+      args:
+        removes: /root/.vbmc/master.pid
+      tags: cleanup
+
+    - name: Empty out VBMC state
+      file:
+        path: /root/.vbmc
+        state: absent
+      tags: cleanup
+
+    - name: start vbmcd
+      command: /opt/vbmc/bin/vbmcd
+      args:
+        creates: /root/.vbmc/master.pid
+
+    - name: Create ironic nodes
+      become: yes
+      shell: |
+        qemu-img create -f raw {{ image_path }}/{{ item }}.raw {{ (ironic_nodes[item]|default({})).disk }}
+        virt-install --name {{ item }} \
+                --memory {{ (ironic_nodes[item]|default({})).ram }} --machine q35 \
+                --vcpus sockets=1,cores=2,threads=1 \
+                --import --disk {{ image_path }}/{{ item }}.raw,format=raw,bus=virtio \
+                --network {{ ironic_network_parms }} \
+                --network {{ ironic_network_parms }} \
+                --events on_reboot=destroy \
+                --noautoconsole
+        virsh destroy {{ item }}
+        ip addr add {{ (ironic_nodes[item]|default({})).bmc_ip }}/32 dev {{ ironic_bridge_name }}
+        /opt/vbmc/bin/vbmc add --address {{ (ironic_nodes[item]|default({})).bmc_ip }} --username admin --password redhat {{ item }}
+        /opt/vbmc/bin/vbmc start {{ item }}
+        true
+      with_items:
+        - "{{ ironic_nodes.keys()|list }}"
