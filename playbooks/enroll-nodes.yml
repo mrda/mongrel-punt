@@ -1,0 +1,104 @@
+---
+- import_playbook: get-vm-ip-address.yml
+
+- name: Enroll ironic nodes
+  hosts: vms
+  remote_user: stack
+  environment:
+    PATH: "{{ ansible_env.PATH }}{{ extra_path }}"
+  tasks:
+
+  - name: Obtain the mac addresses of the ironic nodes
+    become: yes
+    shell: |
+      printf "%s mac %s\n" {{ item }} $(virsh domiflist {{ item }} | tail -n +3 | awk '{ print $5 }' | head -1)
+    register:
+      my_macs
+    with_items:
+      - "{{ ironic_nodes.keys()|list }}"
+    delegate_to: localhost
+
+  - name: assign mac addresses to vms info dict
+    set_fact:
+      vms_info: >
+        {{
+          vms_info|default({}) | combine(
+            dict([[item.stdout.split()[0],
+                   dict([[item.stdout.split()[1], item.stdout.split()[2]]])
+                 ]]))
+        }}
+    with_items: "{{ my_macs.results }}"
+
+  - name: get the kernel image uuid for deployment
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack image list | grep ir-deploy-ipmi.kernel | awk '{ print $2 }'
+    register: kernel_img_uuid
+
+  - name: get the disk image uuid for deployment
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack image list | grep ir-deploy-ipmi.initramfs | awk '{ print $2 }'
+    register: initramfs_img_uuid
+
+  - name: Create the ironic nodes
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal node create --driver ipmi --deploy-interface iscsi --driver-info ipmi_username=admin --driver-info ipmi_password=redhat --driver-info ipmi_address={{ (ironic_nodes[item]|default({})).bmc_ip }} --name {{ item }}
+    args:
+      executable: "/bin/bash"
+    with_items:
+      - "{{ ironic_nodes.keys()|list }}"
+
+  - name: Update deployment info for the ironic nodes
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal node set {{ item }} --driver-info deploy_kernel={{ kernel_img_uuid.stdout }} --driver-info deploy_ramdisk={{ initramfs_img_uuid.stdout }}
+    args:
+      executable: "/bin/bash"
+    with_items:
+      - "{{ ironic_nodes.keys()|list }}"
+
+  - name: Obtain the uuids of the ironic nodes
+    shell: |
+      . /opt/stack/devstack/openrc admin >& /dev/null
+      printf "%s uuid %s\n" {{ item }} $(openstack baremetal node show -f value -c uuid {{ item }})
+    register:
+      my_uuids
+    with_items:
+      - "{{ ironic_nodes.keys()|list }}"
+
+  - name: assign uuids to temporary dict
+    set_fact:
+      node_uuids: >
+        {{
+          node_uuids|default({}) | combine(
+            dict([[item.stdout.split()[0],
+                   dict([[item.stdout.split()[1], item.stdout.split()[2]]])
+                 ]]))
+        }}
+    with_items: "{{ my_uuids.results }}"
+
+  - name: Merge temp dict into vms info dict
+    set_fact:
+      vms_info: >
+        {{
+          vms_info|default({})|combine(
+            {item: vms_info[item]|combine(node_uuids[item])}
+          )
+        }}
+    with_items: "{{ vms_info.keys()|list}}"
+
+  - debug:
+      var: vms_info
+
+  - name: Create the ironic ports
+    shell: |
+        . /opt/stack/devstack/openrc admin >& /dev/null
+        openstack baremetal port create {{ vms_info[item].mac }} --node {{ vms_info[item].uuid }}
+    args:
+      executable: "/bin/bash"
+    with_items:
+      - "{{ vms_info.keys()|list }}"
+
+
