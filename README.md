@@ -23,23 +23,33 @@ The very first thing you want to do is to update the `name:` definition.  It is 
 
 ### Plays
 
-* `build-vm.yml` - builds a virtual machine
-* `prepare-devstack.yml` - configures your VM ready to run devstack
-* `build-ipa-image.yml` - builds a customised tinyipa image for introspection
-* `start-devstack.yml` - runs devstack.  
+In mongrel-punt, we have some higher-level playbooks that run individual plays.  These are:
+* `00-ipa.yml` - build an ironic-python-agent disk image
+* `00-start-devstack.yml` - builds and starts a devstack
+
+You can run these on the supported operating systems as follows:
+
+|              | 00-ipa | 00-start-devstack |
+|:------------:|:------:|:-----------------:|
+| Fedora 29    |:heavy_check_mark:|:x:|
+| Ubuntu 18.04 |:heavy_check_mark:|:heavy_check_mark:|
+| Centos 7     |:heavy_check_mark:|:heavy_check_mark:|
+| Centos 8     |:heavy_check_mark:|:x:|
+
+Alternatively, you can run individuals plays.  See [Limitations](#limitations) to determine which plays are supported where.
+
+* `build-ipa-image.yml` - build an ironic-python-agent image and copies the resultant images back to the invoking host
+* `build-ironic-node.yml` - builds virtual baremetal nodes alongside the devstack vm
+* `build-vm.yml` - builds a virtual machine for the devstack node
+* `copy-ipa-image.yml` - copies ip images from localhost into the devstack vm
+* `enroll-nodes.yml` - enrolls virtual baremetal ironic nodes into devstack
+* `get-vm-ip-address.yml` - utility play to obtain the devstack IP address
 * `introspect-nodes.yml` - performs introspection on the (nested) virtual baremetal nodes, adding traits to them based upon instrospection rules configured in `/opt/stack/introspection/rules.json`
-
-Or, if you're feeling brave, you can run this one single play which invokes the above playbooks in sequence:
-```sh
-ansible-playbook  -K -i inventory-centos7.yml playbooks/main.yml
-```
-Note: Currently there is no currently supported operating system version that can do this.  Please see [Limitations](#limitations).
-
-(As a guide, running `playbooks/main.yml` would takes around 110 minutes of wall clock time on a Lenovo X1 Carbon Gen 6 laptop)
-
-### Utility Plays
-* `get-ip-address.yml` - returns you the routable IP address of the VM
-* `introspect-nodes.yml` - perform ironic introspection on baremetal nodes
+* `metalsmith-provision-traits.yml` - provision virtual baremetal ironic nodes based upon traits added via introspection
+* `prepare-devstack.yml` - configures your VM ready to run devstack
+* `provide-tinyipa.yml` - copy ip disk images from localhost onto the devstack node
+* `build-ipa-image.yml` - builds a customised tinyipa image for introspection
+* `start-devstack.yml` - runs devstack.
 
 ### Running plays
 
