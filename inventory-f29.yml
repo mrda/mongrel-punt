@@ -27,7 +27,6 @@ all:
         patched_openstack_pkgs:
             - os-traits
         patches_to_apply:
-            - { repo: "ironic-python-agent-builder", cherry_pick: "https://review.opendev.org/openstack/ironic-python-agent-builder refs/changes/35/679735/2" }
         extra_path:
         ironic_victim_nodes: 3
         ironic_node_trait: HW_CPU_PPC64LE_POWER8

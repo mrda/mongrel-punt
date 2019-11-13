@@ -91,12 +91,13 @@
       value: "{{ git_email }}"
       scope: global
 
+    # We don't want to ignore errors here as if we are trying to cherry-pick in changes, we can't have local
+    # conflicting changes
   - name: cherry pick in patches from git repos
     shell: "cd /opt/stack/{{ item.repo }} && git fetch {{ item.cherry_pick }} && git cherry-pick FETCH_HEAD"
     with_items:
       - "{{ patches_to_apply }}"
-    # We don't want to ignore errors here as if we are trying to cherry-pick in changes, we can't have local
-    # conflicting changes
+    when: "(patches_to_apply != None)"
 
   - name: ensure introspection rules directory exists
     become: yes
